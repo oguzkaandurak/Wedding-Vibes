@@ -1,274 +1,376 @@
-<!doctype html>
-<html class="no-js" lang="zxx">
+<?php
 
-    <?php
-    if(!isset($_SESSION)) {
-        ob_start();
-        session_start();
+include "master/dbMaster.php";
+function generateRandomString($length = 10)
+{
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
     }
+    return $randomString;
+}
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
 
-    include "master/dbMaster.php";
-    include "include/header.php";
-    include "include/menu.php";
+    if (isset($_SESSION['user-mail'])) {
+        $userMail = $_SESSION['user-mail'];
+        $userName = $_SESSION['user-name'];
+        $id = $_SESSION['id'];
+        $userType = $_SESSION['user-type'];
+        $userAddress = $_SESSION['user-address'];
 
-
-
-    if (isset($_GET["id"])) {
-
-        $id = $_GET["id"];
-
+        $userPhone = $_SESSION['user-phone'];
         $query = $db->prepare('SELECT * FROM users WHERE id = ?');
         $query->execute(array($id));
         $results = $query->fetch();
+    } else {
+        header('Location: login.php');
+    }
+
+}
+
+
+if (isset($_POST["updateProfile"])) {
+
+
+    //File Upload Empty
+    if ($_FILES["profilePhoto"]["error"] == 4) {
+
+
+        $userNameUpd = $_POST["userName"];
+        $userMailUpd = $_POST["userMail"];
+
+        $adress = "";
+        if (isset($_POST["userAdress"]))
+            $adress = $_POST["userAdress"];
+
+
+        $query = $db->prepare("UPDATE users SET name_surname = :sliderHeader, address = :sliderButtonHeader, phone = :sliderButtonUrl WHERE id = :id");
+        $update = $query->execute(array(
+            "sliderHeader" => $userNameUpd,
+            "sliderButtonHeader" => $adress,
+            "sliderButtonUrl" => $userMailUpd,
+            "id" => $id
+        ));
+        if ($update) {
+            //print "güncelleme başarılı!";
+
+            $userName = $userNameUpd;
+            $userAddress = $adress;
+            $userPhone = $userMailUpd;
+            header('Location: profile.php');
+        }
+
+
+    } else { //File Have Uploaded
+
+        //echo "1";
+        $directory = 'img_data/';
+        $fileToUpload = $directory . generateRandomString() . basename($_FILES['profilePhoto']['name']);
+
+        //echo '<pre>';
+        if (move_uploaded_file($_FILES['profilePhoto']['tmp_name'], $fileToUpload)) {
+            $userNameUpd = $_POST["userName"];
+            $userMailUpd = $_POST["userMail"];
+
+            $adress = "";
+            if (isset($_POST["userAdress"]))
+                $adress = $_POST["userAdress"];
+
+
+            $query = $db->prepare("UPDATE users SET name_surname = :sliderHeader, address = :sliderButtonHeader, phone = :sliderButtonUrl, photoUrl = :photoUrl WHERE id = :id");
+
+            $update = $query->execute(array(
+
+                "sliderHeader" => $userNameUpd,
+                "sliderButtonHeader" => $adress,
+                "sliderButtonUrl" => $userMailUpd,
+                "photoUrl" => $fileToUpload,
+                "id" => $id
+            ));
+            if ($update) {
+                //print "güncelleme başarılı!";
+
+                $userName = $userNameUpd;
+                $userAddress = $adress;
+                $userPhone = $userMailUpd;
+                header('Location: profile.php');
+            }
+
+        } else {
+            //echo "Olası dosya yükleme saldırısı!\n";
+        }
+        //echo 'Diğer hata ayıklama bilgileri:';
+        //print_r($_FILES);
+        //print "</pre>";
 
 
     }
 
-
-    ?>
-
-    <body>
-        <!--[if lt IE 8]>
-        <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-        <![endif]-->
+}
 
 
-        <div class="shop-page-wrapper ptb-100">
-            <div class="container">
-                <div class="row">
-                    <div class="col-3">
-                        <div class="card" style="height: 100%">
-                            <div class="card-body">
 
+?>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Profil</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--===============================================================================================-->
+    <link rel="icon" type="image/png" href="images/icons/favicon.png"/>
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="fonts/themify/themify-icons.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="fonts/Linearicons-Free-v1.0.0/icon-font.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="fonts/elegant-font/html-css/style.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/animate/animate.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/css-hamburgers/hamburgers.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/animsition/css/animsition.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/select2/select2.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/daterangepicker/daterangepicker.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/slick/slick.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/lightbox2/css/lightbox.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="css/util.css">
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+    <!--===============================================================================================-->
+
+    <style>
+        .inputStyleCorrect {
+            border: 1px solid rgba(0, 0, 0, .15) !important;
+        }
+
+        .custom-control-inputCorrect {
+            border: 1px solid rgba(0, 0, 0, .15) !important;
+        }
+
+        .btn-bgCorrect {
+            background-color: #e65540 !important;
+            border-color: #e65540 !important;
+        }
+    </style>
+</head>
+<body class="animsition">
+
+<?php
+
+include("includes/header.php")
+
+?>
+
+
+<section class="section-content" style="padding-top:30px; background-color: #fbf4f9;min-height: 600px;">
+    <div class="container">
+
+        <div class="row">
+            <aside class="col-md-3">
+                <ul class="list-group">
+                    <a class="list-group-item active" href="#"> Hesap Bilgileri </a>
+                    <?php
+                    if ($userType == 1)
+                        print "<a class=\"list-group-item\" href=\"userFav.php\"> Favoriler </a>";
+                    if ($userType == 1)
+                        print "<a class=\"list-group-item\" href=\"userAppointments.php\"> Randevularım </a>";
+                    if ($userType == 2)
+                        print "<a class=\"list-group-item\" href=\"addService.php\"> Servis Ekle </a>";
+                    if ($userType == 2)
+                        print "<a class=\"list-group-item\" href=\"myServices.php\"> Servislerim </a>";
+                    ?>
+                    <a class="list-group-item" href="login.php"> Çıkış Yap </a>
+                </ul>
+            </aside> <!-- col.// -->
+            <main class="col-md-9">
+
+                <article class="card mb-3" id="profileShowArticle">
+                    <div class="card-body" style="min-height: 400px">
+
+                        <figure class="icontext">
+                            <div class="icon">
+                                <img class="rounded-circle img-sm border" style="max-width: 100px;"
+                                     src="<?php echo $results["photoUrl"] ?>">
                             </div>
-                        </div>
-                    </div>
-                    <div class="col-9">
-                        <div class="card">
-                            <div class="card-body">
-                                <h4 class="card-title"><?php echo $results["name_surname"] ?></h4>
-                                <form class="forms-sample">
-                                    <div class="form-group row">
-                                        <label for="gender" class="col-sm-3 col-form-label">Ad Soyad</label>
-                                        <div class="col-sm-9">
-                                            <input type="email" class="form-control" id="gender"
-                                                   value="<?php echo $results["email"] ?>" readonly>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row">
-                                        <label for="age" class="col-sm-3 col-form-label">E-mail</label>
-                                        <div class="col-sm-9">
-                                            <input type="email" class="form-control" id="age"
-                                                   value="<?php echo $results["phone"] ?>" readonly>
-                                        </div>
-                                    </div>
-
-
-
-                                </form>
-
+                            <div class="text">
+                                <strong> <?php echo $results["name_surname"] ?> </strong> <br>
+                                <?php echo $results["email"] ?> <br>
                             </div>
-                        </div>
-                    </div>
+                        </figure>
+                        <hr>
+                        <p>
+                            <i class="fa fa-map-marker text-muted"></i> &nbsp; Telefon:
+                            <br>
+                            <?php echo $results["phone"] ?> &nbsp;
+                        </p>
+
+                        <?php
+
+                        if ($userType == 2) {
+                            print "<p> <i class=\"fa fa-map text-muted\"></i> &nbsp; Address:<br>";
+                            echo $results["address"];
+                            print "</p>";
+                        }
+                        ?>
+                        <a href="#" class="btn btn-info" id="editProfile"> Düzenle</a>
+                    </div> <!-- card-body .// -->
+                </article> <!-- card.// -->
+
+                <article class="card mb-3" id="profileEditArticle" style="display:none;">
+                    <div class="card-body" style="min-height: 400px">
 
 
-
-                </div>
-            </div>
-        </div>
+                        <form action="" method="post" enctype='multipart/form-data'>
 
 
-        <?php
+                            <div class="form-group">
+                                <?php
 
-            include "include/footer.php";
-        ?>
+                                if ($userType == 1)
+                                    print "<label for=\"inputAddress\">Ad Soyad</label>";
+                                else if ($userType == 2)
+                                    print "<label for=\"inputAddress\">Firma Adı</label>";
+                                ?>
 
-        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-hidden="true">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span class="pe-7s-close" aria-hidden="true"></span>
-            </button>
-            <div class="modal-dialog modal-quickview-width" role="document">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <div class="qwick-view-left">
-                            <div class="quick-view-learg-img">
-                                <div class="quick-view-tab-content tab-content">
-                                    <div class="tab-pane active show fade" id="modal1" role="tabpanel">
-                                        <img src="assets/img/quick-view/l1.jpg" alt="">
-                                    </div>
-                                    <div class="tab-pane fade" id="modal2" role="tabpanel">
-                                        <img src="assets/img/quick-view/l2.jpg" alt="">
-                                    </div>
-                                    <div class="tab-pane fade" id="modal3" role="tabpanel">
-                                        <img src="assets/img/quick-view/l3.jpg" alt="">
-                                    </div>
-                                </div>
+                                <input type="text" name="userName" class="form-control inputStyleCorrect"
+                                       id="inputAddress"
+                                       value="<?php echo $results["name_surname"]  ?>" required>
                             </div>
-                            <div class="quick-view-list nav" role="tablist">
-                                <a class="active" href="#modal1" data-toggle="tab" role="tab">
-                                    <img src="assets/img/quick-view/s1.jpg" alt="">
-                                </a>
-                                <a href="#modal2" data-toggle="tab" role="tab">
-                                    <img src="assets/img/quick-view/s2.jpg" alt="">
-                                </a>
-                                <a href="#modal3" data-toggle="tab" role="tab">
-                                    <img src="assets/img/quick-view/s3.jpg" alt="">
-                                </a>
+                            <div class="form-group">
+                                <label for="inputAddress">Telefon</label>
+                                <input type="text" name="userMail" class="form-control inputStyleCorrect"
+                                       id="inputAddress"
+                                       value="<?php echo $results["phone"]; ?>" required>
                             </div>
-                        </div>
-                        <div class="qwick-view-right">
-                            <div class="qwick-view-content">
-                                <h3>Handcrafted Supper Mug</h3>
-                                <div class="price">
-                                    <span class="new">$90.00</span>
-                                    <span class="old">$120.00  </span>
-                                </div>
-                                <div class="rating-number">
-                                    <div class="quick-view-rating">
-                                        <i class="pe-7s-star"></i>
-                                        <i class="pe-7s-star"></i>
-                                        <i class="pe-7s-star"></i>
-                                        <i class="pe-7s-star"></i>
-                                        <i class="pe-7s-star"></i>
-                                    </div>
-                                    <div class="quick-view-number">
-                                        <span>2 Ratting (S)</span>
-                                    </div>
-                                </div>
-                                <p>Lorem ipsum dolor sit amet, consectetur adip elit, sed do tempor incididun ut labore et dolore magna aliqua. Ut enim ad mi , quis nostrud veniam exercitation .</p>
-                                <div class="quick-view-select">
-                                    <div class="select-option-part">
-                                        <label>Size*</label>
-                                        <select class="select">
-                                            <option value="">- Please Select -</option>
-                                            <option value="">900</option>
-                                            <option value="">700</option>
-                                        </select>
-                                    </div>
-                                    <div class="select-option-part">
-                                        <label>Color*</label>
-                                        <select class="select">
-                                            <option value="">- Please Select -</option>
-                                            <option value="">orange</option>
-                                            <option value="">pink</option>
-                                            <option value="">yellow</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="quickview-plus-minus">
-                                    <div class="cart-plus-minus">
-                                        <input type="text" value="02" name="qtybutton" class="cart-plus-minus-box">
-                                    </div>
-                                    <div class="quickview-btn-cart">
-                                        <a class="btn-hover-black" href="#">add to cart</a>
-                                    </div>
-                                    <div class="quickview-btn-wishlist">
-                                        <a class="btn-hover" href="#"><i class="pe-7s-like"></i></a>
-                                    </div>
-                                </div>
+
+
+                            <?php
+
+                            if ($userType == 2){
+
+                                print "<div class=\"form-group\">";
+                                print "<label for=\"exampleFormControlTextarea1\">Adres</label>";
+                                print "<textarea class=\"form-control inputStyleCorrect\" name=\"userAdress\"
+                                          id=\"exampleFormControlTextarea1\" rows=\"3\" required>".$results["address"]."</textarea>";
+                                print "</div>";
+
+                            }
+
+
+                            ?>
+
+
+
+
+
+                            <div class="form-group">
+                                <label for="exampleFormControlFile1">Fotoğraf Seçiniz</label>
+                                <input type="file" name="profilePhoto" class="form-control-file"
+                                       id="exampleFormControlFile1">
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-		<!-- modal -->
-        <div class="modal fade" id="exampleCompare" tabindex="-1" role="dialog" aria-hidden="true">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span class="pe-7s-close" aria-hidden="true"></span>
-            </button>
-            <div class="modal-dialog modal-compare-width" role="document">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <form action="#">
-                            <div class="table-content compare-style table-responsive">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th></th>
-                                            <th>
-                                                <a href="#">Remove <span>x</span></a>
-                                                <img src="assets/img/cart/4.jpg" alt="">
-                                                <p>Blush Sequin Top </p>
-                                                <span>$75.99</span>
-                                                <a class="compare-btn" href="#">Add to cart</a>
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td class="compare-title"><h4>Description </h4></td>
-                                            <td class="compare-dec compare-common">
-                                                <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has beenin the stand ard dummy text ever since the 1500s, when an unknown printer took a galley</p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="compare-title"><h4>Sku </h4></td>
-                                            <td class="product-none compare-common">
-                                                <p>-</p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="compare-title"><h4>Availability  </h4></td>
-                                            <td class="compare-stock compare-common">
-                                                <p>In stock</p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="compare-title"><h4>Weight   </h4></td>
-                                            <td class="compare-none compare-common">
-                                                <p>-</p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="compare-title"><h4>Dimensions   </h4></td>
-                                            <td class="compare-stock compare-common">
-                                                <p>N/A</p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="compare-title"><h4>brand   </h4></td>
-                                            <td class="compare-brand compare-common">
-                                                <p>HasTech</p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="compare-title"><h4>color   </h4></td>
-                                            <td class="compare-color compare-common">
-                                                <p>Grey, Light Yellow, Green, Blue, Purple, Black </p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="compare-title"><h4>size    </h4></td>
-                                            <td class="compare-size compare-common">
-                                                <p>XS, S, M, L, XL, XXL </p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="compare-title"></td>
-                                            <td class="compare-price compare-common">
-                                                <p>$75.99 </p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+
+
+                            <input type="submit" name="updateProfile" class="btn btn-primary btn-bgCorrect"
+                                   value="Profili Güncelle">
                         </form>
-                    </div>
-                </div>
-            </div>
+
+                    </div> <!-- card-body .// -->
+                </article> <!-- card.// -->
+
+            </main> <!-- col.// -->
         </div>
 
+    </div> <!-- container .//  -->
+</section>
+
+<?php
+include("includes/footer.php")
+
+?>
 
 
+<!-- Back to top -->
+<div class="btn-back-to-top bg0-hov" id="myBtn">
+		<span class="symbol-btn-back-to-top">
+			<i class="fa fa-angle-double-up" aria-hidden="true"></i>
+		</span>
+</div>
+
+<!-- Container Selection1 -->
+<div id="dropDownSelect1"></div>
 
 
-		<!-- all js here -->
+<!--===============================================================================================-->
+<script type="text/javascript" src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+<script type="text/javascript" src="vendor/animsition/js/animsition.min.js"></script>
+<!--===============================================================================================-->
+<script type="text/javascript" src="vendor/bootstrap/js/popper.js"></script>
+<script type="text/javascript" src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+<script type="text/javascript" src="vendor/select2/select2.min.js"></script>
+<script type="text/javascript">
+    $(".selection-1").select2({
+        minimumResultsForSearch: 20,
+        dropdownParent: $('#dropDownSelect1')
+    });
+</script>
+<!--===============================================================================================-->
+<script type="text/javascript" src="vendor/slick/slick.min.js"></script>
+<script type="text/javascript" src="js/slick-custom.js"></script>
+<!--===============================================================================================-->
+<script type="text/javascript" src="vendor/countdowntime/countdowntime.js"></script>
+<!--===============================================================================================-->
+<script type="text/javascript" src="vendor/lightbox2/js/lightbox.min.js"></script>
+<!--===============================================================================================-->
+<script type="text/javascript" src="vendor/sweetalert/sweetalert.min.js"></script>
+<script type="text/javascript">
+    $('.block2-btn-addcart').each(function () {
+        var nameProduct = $(this).parent().parent().parent().find('.block2-name').html();
+        $(this).on('click', function () {
+            swal(nameProduct, "is added to cart !", "success");
+        });
+    });
 
-        <?php
+    $('.block2-btn-addwishlist').each(function () {
+        var nameProduct = $(this).parent().parent().parent().find('.block2-name').html();
+        $(this).on('click', function () {
+            swal(nameProduct, "is added to wishlist !", "success");
+        });
+    });
+</script>
 
-            include "include/jsFooter.php" ;
-        ?>
+<!--===============================================================================================-->
+<script src="js/main.js"></script>
 
-    </body>
+
+<script>
+
+    $("#editProfile").click(function () {
+
+
+        $("#profileShowArticle").css("display", "none");
+        $('#profileEditArticle').css("display", "block");
+
+
+    });
+
+</script>
+
+</body>
 </html>

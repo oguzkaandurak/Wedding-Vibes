@@ -13,63 +13,26 @@ if (isset($_SESSION["user-mail"])) {
 }
 
 
-if (isset($_GET["activateUser"])){
-
-    
-
-    $secretpasskey = $_GET["activateUser"];
 
 
-    $request = $db->prepare("SELECT * FROM activateuser where secretkey=:secretpasskey");
-    $request->execute(array(
-        'secretpasskey' => $secretpasskey
-
-    ));
-
-    $response = $request->rowCount();
 
 
-    $res = $request->fetch();
+if (isset($_POST['passwordReset'])) {
 
-    
-    if ($response == 1) {
+    $userPassword = $_POST['user-password'];
+    $secretpasskey = "";
 
-       
+    if ($_GET["secKey"]) {
+        $secretpasskey = $_GET["secKey"];
 
-        $queryForAppUs = $db->prepare("UPDATE users SET is_active = :is_active WHERE email = :email");
-        $update = $queryForAppUs->execute(array(
-            "is_active" => 1,
-            "email" => $res["email"]
-        ));
-        if ($update) {
-
-         $query = $db->prepare("DELETE FROM activateuser WHERE email = :id");
-            $delete = $query->execute(array(
-                'id' => $res["email"]
-            ));
-
-        }
-        
-       
-
-    } else {
-
-        //header("Location:login.php?res=no");
-       // exit;
+    }else{
+         header("Location: login.php");
     }
 
-}
 
-
-if (isset($_POST['login'])) {
-
-    $mail = $_POST['user-mail'];
-    $password = md5($_POST['user-password']);
-
-    $request = $db->prepare("SELECT * FROM users where email=:mail and password=:password and is_active = 1");
+    $request = $db->prepare("SELECT * FROM passreset where secretpasskey=:secretpasskey");
     $request->execute(array(
-        'mail' => $mail,
-        'password' => $password
+        'secretpasskey' => $secretpasskey
 
     ));
 
@@ -78,23 +41,35 @@ if (isset($_POST['login'])) {
 
     $res = $request->fetch();
 
+    print_r($res);
 
     if ($response == 1) {
 
-        $_SESSION['user-mail'] = $mail;
-        $_SESSION['user-name'] = $res["name_surname"];
-        $_SESSION['id'] = $res["id"];
-        $_SESSION['user-type'] = $res["user_type"];
-        $_SESSION['user-address'] = $res["address"];
-        $_SESSION['user-phone'] = $res["phone"];
-        $_SESSION['user-firebaseUID'] = $res["firebaseUID"];
-        header("Location:profile.php");
+        $idAppointment = $_GET["applyAppointment"];
+        $lastSPID = $_GET["id"];
+        $is_activated = 1;
+
+        $queryForAppUs = $db->prepare("UPDATE users SET password = :password WHERE email = :email");
+        $update = $queryForAppUs->execute(array(
+            "password" => md5($userPassword),
+            "email" => $res["email"]
+        ));
+        if ($update) {
+
+         $query = $db->prepare("DELETE FROM passreset WHERE email = :id");
+            $delete = $query->execute(array(
+                'id' => $res["email"]
+            ));
+
+        }
+        
+        header("Location: login.php");
         exit;
 
 
     } else {
 
-        header("Location:login.php?res=no");
+        //header("Location:login.php?res=no");
         exit;
     }
 
@@ -105,7 +80,7 @@ if (isset($_POST['login'])) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Giriş Yap</title>
+    <title>Parolamı Yenile</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!--===============================================================================================-->
@@ -147,56 +122,33 @@ include("includes/header.php")
 <!-- Title Page -->
 <section class="bg-title-page p-t-40 p-b-50 flex-col-c-m" style="background-image: url(images/heading-pages-05.jpg);">
     <h2 class="l-text2 t-center">
-        Giriş Yap
+        Parolamı Unuttum
     </h2>
 </section>
 
-<section class="section-conten padding-y" style="min-height:84vh;background-color: #fbf4f9;padding-top:80px;">
+<section class="section-conten padding-y" style="min-height:600px;background-color: #fbf4f9;padding-top:100px;">
 
     <!-- ============================ COMPONENT LOGIN   ================================= -->
-    <div class="card mx-auto" style="max-width: 380px; margin-top:100px;">
+    <div class="card mx-auto" style="max-width: 380px; ">
         <div class="card-body">
-            <h4 class="card-title mb-4">Giriş Yap</h4>
+            <h4 class="card-title mb-4">Parolamı Yenile</h4>
             <form method="post" action="">
 
-                <?php
-                if (isset($_GET["res"])){
 
-                    print "<div class=\"alert alert-danger\" role=\"alert\">Girdiğiniz E-mail ya da parola yanlış.</div>";
-
-                }
-                 if (isset($_GET["mustactivate"])){
-
-                    print "<div class=\"alert alert-success\" role=\"alert\">Giriş yapmadan önce hesabınızı aktive etmelisiniz. Size gönderilmiş e-postayı kontrol ediniz.</div>";
-
-                }
-                 if (isset($_GET["activateUser"])){
-
-                    print "<div class=\"alert alert-success\" role=\"alert\">Hesabınız aktive edildi giriş yapabilirsiniz.</div>";
-
-                }
-
-                ?>
-
-                <div class="form-group">
-                    <input name="user-mail" style="border: 1px solid rgba(0,0,0,.15) !important;" class="form-control"
-                           placeholder="E-mail" type="text" required>
-                </div> <!-- form-group// -->
                 <div class="form-group">
                     <input name="user-password" style="border: 1px solid rgba(0,0,0,.15) !important;"
                            class="form-control" placeholder="Parola" type="password" required>
                 </div> <!-- form-group// -->
 
                 <div class="form-group">
-                    <input type="submit" name="login" class="btn btn-primary btn-block" value="Giriş Yap"
+                    <input type="submit" name="passwordReset" class="btn btn-primary btn-block" value="Parolamı Yenile"
                            style="background-color: #e65540">
                 </div> <!-- form-group// -->
             </form>
         </div> <!-- card-body.// -->
     </div> <!-- card .// -->
 
-    <p class="text-center mt-4">Hesabınız yok mu? <a href="register.php">Kayıt Ol</a></p><br>
-    <p class="text-center mt-4"><a href="forgetPassword.php">Parolamı Unuttum</a></p>
+    <p class="text-center mt-4"><a href="register.php">Giriş Yap</a></p>
     <br><br>
     <!-- ============================ COMPONENT LOGIN  END.// ================================= -->
 
